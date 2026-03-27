@@ -1,0 +1,67 @@
+# Docker Compose for VoxHire AI
+# Orchestrates PostgreSQL, Redis, and all backend microservices
+
+version: '3.8'
+
+services:
+  # ─── Infrastructure ─────────────────────────────────
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: voxhire-postgres
+    environment:
+      POSTGRES_USER: voxhire
+      POSTGRES_PASSWORD: voxhire_secret
+      POSTGRES_DB: voxhire_db
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U voxhire']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: voxhire-redis
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ─── Backend Services ───────────────────────────────
+  # For MVP development, run services locally with `npm run dev`.
+  # These Docker service definitions are for production-like deployment.
+  # Uncomment and configure when ready for containerized deployment.
+
+  # api-gateway:
+  #   build:
+  #     context: .
+  #     dockerfile: apps/services/api-gateway/Dockerfile
+  #   container_name: voxhire-api-gateway
+  #   ports:
+  #     - '4000:4000'
+  #   environment:
+  #     - DATABASE_URL=postgresql://voxhire:voxhire_secret@postgres:5432/voxhire_db
+  #     - REDIS_URL=redis://redis:6379
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  default:
+    name: voxhire-network

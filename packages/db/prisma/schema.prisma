@@ -1,0 +1,157 @@
+// This is your Prisma schema file for VoxHire AI
+// See: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ─────────────────────────────────────────
+
+enum InterviewMode {
+  NORMAL
+  RAPID_FIRE
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum SessionStatus {
+  IN_PROGRESS
+  COMPLETED
+  ABANDONED
+}
+
+// ─── User ──────────────────────────────────────────
+
+model User {
+  id           String             @id @default(uuid())
+  name         String
+  email        String             @unique
+  passwordHash String?            @map("password_hash")
+  googleId     String?            @unique @map("google_id")
+  avatarUrl    String?            @map("avatar_url")
+  authProvider String             @default("local") @map("auth_provider") // "local" | "google"
+  createdAt    DateTime           @default(now()) @map("created_at")
+  updatedAt    DateTime           @updatedAt @map("updated_at")
+  sessions     InterviewSession[]
+
+  @@map("users")
+}
+
+// ─── Interview Session ─────────────────────────────
+
+model InterviewSession {
+  id           String        @id @default(uuid())
+  userId       String        @map("user_id")
+  mode         InterviewMode
+  role         String
+  difficulty   Difficulty    @default(MEDIUM)
+  startedAt    DateTime      @default(now()) @map("started_at")
+  endedAt      DateTime?     @map("ended_at")
+  overallScore Float?        @map("overall_score")
+  status       SessionStatus @default(IN_PROGRESS)
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questions    Question[]
+  responses    Response[]
+  weaknessTags WeaknessTag[]
+  finalReport  FinalReport?
+
+  @@index([userId])
+  @@map("interview_sessions")
+}
+
+// ─── Question ──────────────────────────────────────
+
+model Question {
+  id           String     @id @default(uuid())
+  sessionId    String     @map("session_id")
+  questionText String     @map("question_text") @db.Text
+  topic        String
+  difficulty   Difficulty
+  orderIndex   Int        @map("order_index")
+  questionType String?    @map("question_type")
+  generatedBy  String     @default("gemini") @map("generated_by")
+
+  session  InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  response Response?
+
+  @@index([sessionId])
+  @@map("questions")
+}
+
+// ─── Response ──────────────────────────────────────
+
+model Response {
+  id              String   @id @default(uuid())
+  questionId      String   @unique @map("question_id")
+  sessionId       String   @map("session_id")
+  transcript      String   @db.Text
+  audioUrl        String?  @map("audio_url")
+  durationSeconds Float?   @map("duration_seconds")
+  submittedAt     DateTime @default(now()) @map("submitted_at")
+
+  question Question         @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  session  InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  score    Score?
+
+  @@index([sessionId])
+  @@map("responses")
+}
+
+// ─── Score ──────────────────────────────────────────
+
+model Score {
+  id              String  @id @default(uuid())
+  responseId      String  @unique @map("response_id")
+  semanticScore   Float   @map("semantic_score")
+  clarityScore    Float   @map("clarity_score")
+  confidenceScore Float   @map("confidence_score")
+  hesitationScore Float   @map("hesitation_score")
+  fillerScore     Float   @map("filler_score")
+  finalScore      Float   @map("final_score")
+  aiFeedback      String? @map("ai_feedback") @db.Text
+
+  response Response @relation(fields: [responseId], references: [id], onDelete: Cascade)
+
+  @@map("scores")
+}
+
+// ─── Weakness Tag ──────────────────────────────────
+
+model WeaknessTag {
+  id           String @id @default(uuid())
+  sessionId    String @map("session_id")
+  topic        String
+  weaknessType String @map("weakness_type")
+  severity     String
+
+  session InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@map("weakness_tags")
+}
+
+// ─── Final Report ──────────────────────────────────
+
+model FinalReport {
+  id                     String   @id @default(uuid())
+  sessionId              String   @unique @map("session_id")
+  strengthsSummary       String   @map("strengths_summary") @db.Text
+  weaknessSummary        String   @map("weakness_summary") @db.Text
+  improvementSuggestions String   @map("improvement_suggestions") @db.Text
+  reportJson             Json?    @map("report_json")
+  createdAt              DateTime @default(now()) @map("created_at")
+
+  session InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("final_reports")
+}

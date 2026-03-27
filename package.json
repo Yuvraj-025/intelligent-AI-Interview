@@ -1,0 +1,29 @@
+{
+  "name": "voxhire-ai",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "apps/services/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "clean": "turbo run clean",
+    "dev:web": "turbo run dev --filter=@voxhire/web",
+    "dev:gateway": "turbo run dev --filter=@voxhire/api-gateway",
+    "dev:services": "turbo run dev --filter=@voxhire/auth-service --filter=@voxhire/interview-service --filter=@voxhire/voice-service --filter=@voxhire/scoring-service --filter=@voxhire/analytics-service --filter=@voxhire/storage-service",
+    "db:generate": "turbo run db:generate --filter=@voxhire/db",
+    "db:migrate": "turbo run db:migrate --filter=@voxhire/db",
+    "db:push": "turbo run db:push --filter=@voxhire/db"
+  },
+  "devDependencies": {
+    "turbo": "^2.4.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "packageManager": "npm@10.0.0"
+}
