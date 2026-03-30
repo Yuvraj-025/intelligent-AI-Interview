@@ -13,14 +13,33 @@ export class GeminiProvider implements AIProvider {
 
   constructor(apiKey: string) {
     const genAI = new GoogleGenerativeAI(apiKey);
-    this.model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    this.model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
+  }
+
+  /** Retry wrapper — handles 429 rate-limit with exponential backoff */
+  private async withRetry<T>(fn: () => Promise<T>, retries = 3, delayMs = 5000): Promise<T> {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        return await fn();
+      } catch (err: any) {
+        const isRateLimit = err?.status === 429 || err?.message?.includes('429');
+        if (isRateLimit && attempt < retries) {
+          const wait = delayMs * Math.pow(2, attempt); // 5s, 10s, 20s
+          console.warn(`Gemini rate-limited. Retrying in ${wait}ms... (attempt ${attempt + 1}/${retries})`);
+          await new Promise(res => setTimeout(res, wait));
+          continue;
+        }
+        throw err;
+      }
+    }
+    throw new Error('Max retries exceeded');
   }
 
   async generateQuestion(params: QuestionGenerationParams): Promise<GeneratedQuestion> {
     const prompt = QUESTION_GENERATION_PROMPT(params);
 
     try {
-      const result = await this.model.generateContent(prompt);
+      const result = await this.withRetry(() => this.model.generateContent(prompt));
       const text = result.response.text();
       return this.parseQuestionResponse(text, params.difficulty);
     } catch (error) {
@@ -39,7 +58,7 @@ export class GeminiProvider implements AIProvider {
     const prompt = ANSWER_EVALUATION_PROMPT(params);
 
     try {
-      const result = await this.model.generateContent(prompt);
+      const result = await this.withRetry(() => this.model.generateContent(prompt));
       const text = result.response.text();
       return this.parseEvaluationResponse(text);
     } catch (error) {
@@ -62,7 +81,7 @@ export class GeminiProvider implements AIProvider {
     const prompt = REPORT_GENERATION_PROMPT(params);
 
     try {
-      const result = await this.model.generateContent(prompt);
+      const result = await this.withRetry(() => this.model.generateContent(prompt));
       const text = result.response.text();
       return this.parseReportResponse(text);
     } catch (error) {

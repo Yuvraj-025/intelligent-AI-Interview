@@ -1,9 +1,24 @@
 import { z } from 'zod';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
+import * as fs from 'fs';
 
-// Load .env from project root
-dotenv.config({ path: path.resolve(process.cwd(), '../../.env') });
+// Load .env from project root (resolve from multiple candidate paths)
+// __dirname in compiled form: packages/config/dist/
+// process.cwd() varies based on which service invokes this, so try multiple locations
+const rootCandidates = [
+  path.resolve(__dirname, '../../../.env'),       // from packages/config/dist/
+  path.resolve(__dirname, '../../.env'),           // alternative depth
+  path.resolve(process.cwd(), '.env'),             // service cwd (when run via turbo from root)
+  path.resolve(process.cwd(), '../../.env'),       // service cwd relative to packages
+];
+
+for (const envPath of rootCandidates) {
+  if (fs.existsSync(envPath)) {
+    dotenv.config({ path: envPath });
+    break;
+  }
+}
 
 // ─── Schema ────────────────────────────────────────
 

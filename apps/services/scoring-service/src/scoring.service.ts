@@ -50,7 +50,7 @@ export class ScoringService {
     if (scores.length === 0) return null;
 
     const avg = (field: keyof typeof scores[0]) =>
-      scores.reduce((sum, s) => sum + (Number(s[field]) || 0), 0) / scores.length;
+      scores.reduce((sum: number, s) => sum + (Number(s[field]) || 0), 0) / scores.length;
 
     return {
       totalResponses: scores.length,

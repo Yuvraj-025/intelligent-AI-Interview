@@ -1,16 +1,37 @@
-import { Controller, Post, Body, Get, Param, Req } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Req, UnauthorizedException } from '@nestjs/common';
 import { ProxyService } from './proxy.service';
 import { Request } from 'express';
+
+/** Decode JWT payload without verifying (gateway trusts the token; auth-service validates on sensitive ops) */
+function decodeJwtPayload(token: string): { sub?: string; email?: string } | null {
+  try {
+    const bare = token.replace(/^Bearer\s+/i, '');
+    const payloadB64 = bare.split('.')[1];
+    if (!payloadB64) return null;
+    const json = Buffer.from(payloadB64, 'base64url').toString('utf8');
+    return JSON.parse(json);
+  } catch {
+    return null;
+  }
+}
 
 @Controller('interview')
 export class InterviewProxyController {
   constructor(private readonly proxy: ProxyService) {}
 
   @Post('sessions')
-  async createSession(@Body() body: unknown, @Req() req: Request) {
+  async createSession(@Body() body: any, @Req() req: Request) {
     const token = req.headers.authorization;
-    return this.proxy.forward('interview-service', 'POST', '/interview/sessions', body, {
-      authorization: token || '',
+    if (!token) throw new UnauthorizedException('Authorization token required');
+
+    const payload = decodeJwtPayload(token);
+    if (!payload?.sub) throw new UnauthorizedException('Invalid token — no user ID');
+
+    // Inject the real userId so interview-service can create the session correctly
+    const enrichedBody = { ...body, userId: payload.sub };
+
+    return this.proxy.forward('interview-service', 'POST', '/interview/sessions', enrichedBody, {
+      authorization: token,
     });
   }
 

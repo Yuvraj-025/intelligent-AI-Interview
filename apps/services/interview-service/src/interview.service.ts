@@ -90,9 +90,41 @@ export class InterviewService {
 
   /** Process an answer and generate the next question */
   async processAnswer(sessionId: string, questionId: string, transcript: string, audioUrl?: string, durationSeconds?: number) {
-    // Get current interview state from Redis
-    const state = await this.redis.getInterviewState(sessionId);
-    if (!state) throw new NotFoundException('Active interview state not found');
+    // Get current interview state from Redis — rebuild from DB if missing
+    let state = await this.redis.getInterviewState(sessionId);
+    if (!state) {
+      // Redis state was lost (restart / eviction) — reconstruct from DB
+      const dbSession = await prisma.interviewSession.findUnique({
+        where: { id: sessionId },
+        include: {
+          questions: { orderBy: { orderIndex: 'asc' } },
+          responses: { include: { score: true } },
+        },
+      });
+      if (!dbSession) throw new NotFoundException('Session not found');
+
+      const scores = dbSession.responses
+        .map((r: any) => r.score?.finalScore)
+        .filter((s: any) => s != null) as number[];
+
+      const weakAreas: string[] = [];
+
+      state = {
+        sessionId,
+        currentQuestionIndex: dbSession.responses.length,
+        totalQuestions: dbSession.mode === 'RAPID_FIRE' ? 10 : 7,
+        scores,
+        weakAreas,
+        previousQuestions: dbSession.questions.map((q: any) => q.questionText),
+        mode: dbSession.mode,
+        role: dbSession.role,
+        difficulty: dbSession.difficulty,
+        startedAt: dbSession.startedAt.toISOString(),
+      };
+
+      // Persist the rebuilt state
+      await this.redis.setInterviewState(sessionId, state);
+    }
 
     // Get the question
     const question = await prisma.question.findUnique({ where: { id: questionId } });
@@ -160,7 +192,10 @@ export class InterviewService {
       };
     }
 
-    // Generate adaptive next question
+    // Small pause between sequential Gemini calls to avoid RPM rate limits
+    await new Promise(res => setTimeout(res, 2000));
+
+    // Generate adaptive next question based on weak areas from this answer
     const nextQuestion = await this.aiProvider.generateQuestion({
       role: state.role,
       difficulty: state.difficulty as Difficulty,
