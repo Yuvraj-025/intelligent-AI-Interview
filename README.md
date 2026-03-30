@@ -65,7 +65,7 @@ cd packages/db
 npx prisma generate
 npx prisma db push
 ```
-
+cd ..
 ### 4. Install Python Dependencies
 ```bash
 pip install edge-tts openai-whisper

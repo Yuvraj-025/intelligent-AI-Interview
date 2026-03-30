@@ -1,5 +1,6 @@
 import { Controller, Post, Body, Get, Param, Headers } from '@nestjs/common';
 import { InterviewService } from './interview.service';
+import { CreateSessionDto, InterviewRole, InterviewMode, Difficulty } from '@voxhire/shared-types';
 
 @Controller('interview')
 export class InterviewController {
@@ -7,13 +8,21 @@ export class InterviewController {
 
   @Post('sessions')
   async createSession(
-    @Body() body: { role: string; mode: string; difficulty?: string },
+    @Body() body: { role: string; mode: string; difficulty?: string; userId?: string },
     @Headers('authorization') token: string,
   ) {
     // In production, extract userId from JWT. For now, pass from header.
     // The API Gateway should decode the JWT and pass userId.
-    const userId = body['userId'] || 'temp-user-id';
-    const result = await this.interviewService.createSession(userId, body as any);
+    const userId = body.userId || 'temp-user-id';
+    
+    // Convert string values to enum values
+    const dto: CreateSessionDto = {
+      role: body.role as InterviewRole,
+      mode: body.mode as InterviewMode,
+      difficulty: body.difficulty as Difficulty | undefined
+    };
+    
+    const result = await this.interviewService.createSession(userId, dto);
     return { success: true, data: result };
   }
 
