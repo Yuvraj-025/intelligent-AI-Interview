@@ -13,7 +13,7 @@ export class GeminiProvider implements AIProvider {
 
   constructor(apiKey: string) {
     const genAI = new GoogleGenerativeAI(apiKey);
-    this.model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
+    this.model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
   }
 
   /** Retry wrapper — handles 429 rate-limit with exponential backoff */
@@ -25,7 +25,7 @@ export class GeminiProvider implements AIProvider {
         const isRateLimit = err?.status === 429 || err?.message?.includes('429');
         if (isRateLimit && attempt < retries) {
           const wait = delayMs * Math.pow(2, attempt); // 5s, 10s, 20s
-          console.warn(`Gemini rate-limited. Retrying in ${wait}ms... (attempt ${attempt + 1}/${retries})`);
+          console.warn(`Gemini 2.5 Flash rate-limited. Retrying in ${wait}ms... (attempt ${attempt + 1}/${retries})`);
           await new Promise(res => setTimeout(res, wait));
           continue;
         }
