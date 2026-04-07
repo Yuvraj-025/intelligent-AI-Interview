@@ -1,4 +1,4 @@
-// This is your Prisma schema file for VoxHire AI
+// This is your Prisma schema file for Smart Ai Interviewer
 // See: https://pris.ly/d/prisma-schema
 
 generator client {

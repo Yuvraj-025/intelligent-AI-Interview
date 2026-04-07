@@ -1,8 +1,8 @@
-# VoxHire AI
+# Smart Ai Interviewer
 
 **Adaptive Voice-Based Interview Simulation & Weakness Mapping Platform**
 
-VoxHire AI is a voice-first interview simulation platform that asks questions using generated speech, listens to spoken answers, evaluates performance, adapts future questions, and generates structured feedback.
+Smart Ai Interviewer is a voice-first interview simulation platform that asks questions using generated speech, listens to spoken answers, evaluates performance, adapts future questions, and generates structured feedback.
 
 ## Tech Stack
 

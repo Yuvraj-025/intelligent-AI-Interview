@@ -1,4 +1,4 @@
-# VoxHire AI — Build Task Tracker
+# Smart Ai Interviewer — Build Task Tracker
 
 ## Phase 1 — Foundation ✅
 - [x] Monorepo + shared packages + database + Docker Compose
