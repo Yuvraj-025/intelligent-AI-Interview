@@ -14,7 +14,7 @@
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 ![Turborepo](https://img.shields.io/badge/Turborepo-Monorepo-EF4444?style=for-the-badge&logo=turborepo&logoColor=white)
 
-Smart Ai Interviewer is a voice-first interview simulation platform that asks questions using generated speech, listens to spoken answers, evaluates performance, adapts future questions, and generates structured feedback.
+Smart Ai Interviewer is an AI-driven interview simulation platform that uses voice interaction to provide realistic, adaptive mock interviews. Unlike conventional mock-interview apps (mostly text-only or static), our system speaks questions aloud (using text-to-speech) and listens to spoken answers (using speech-to-text). It dynamically adapts each next question based on previous answers, employing large language models (LLMs) and NLP to understand the context, analysing the given answer for Clarity and Confidence and also Scoring based on that. After the interview, it generates a structured report highlighting strengths and weaknesses (weakness mapping), along with actionable feedback. Early internal tests show that users find the voice-based interaction more engaging and realistic than text-only quizzes.
 
 ## Tech Stack
 
