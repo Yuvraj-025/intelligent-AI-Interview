@@ -51,6 +51,10 @@ voxhire-ai/
 └── docs/                             # Product & engineering docs
 ```
 
+![alt text](media/1.png)
+![alt text](media/2.png)
+
+
 ## Quick Start
 
 ### Prerequisites
